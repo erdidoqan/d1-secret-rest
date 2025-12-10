@@ -21,13 +21,6 @@
 			"database_id": "e652a7bf-492b-4905-90f4-1b29f483a608"
 		}
 	],
-	"secrets_store_secrets": [
-		{
-			"store_id": "<YOUR-STORE-ID>",
-			"binding": "SECRET",
-			"secret_name": "<YOUR-SECRET-NAME>"
-		}
-	],
 	"observability": {
 		"enabled": true
 	}

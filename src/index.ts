@@ -3,9 +3,9 @@ import { cors } from "hono/cors";
 import { handleRest } from './rest';
 
 export interface Env {
-    SECRET: SecretsStoreSecret;
+    SECRET: string;  // Normal secret olarak tanımlandı
     // Dinamik D1 veritabanları - [key: string] formatında
-    [key: string]: D1Database | SecretsStoreSecret | unknown;
+    [key: string]: D1Database | string | unknown;
 }
 
 // # List all users from specific database
@@ -62,8 +62,8 @@ export default {
             return cors()(c, next);
         })
 
-        // Secret Store key value that we have set
-        const secret = await env.SECRET.get();
+        // Secret değeri (normal secret olarak)
+        const secret = env.SECRET;
 
         // Authentication middleware that verifies the Authorization header
         // is sent in on each request and matches the value of our Secret key.
