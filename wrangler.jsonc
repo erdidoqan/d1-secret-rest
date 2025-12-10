@@ -4,26 +4,21 @@
  */
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "d1-rest",
+	"name": "d1-secret-rest",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-03-03",
-	// Birden fazla D1 veritabanı tanımlayabilirsiniz
-	// URL'de binding adını kullanarak erişirsiniz: /db/{binding}/rest/{table}
+	"account_id": "0f6cb9b6c5fb3a6db6781f0dc9f36844",
+	// D1 Veritabanları - URL'de binding adını kullanarak erişirsiniz: /db/{binding}/rest/{table}
 	"d1_databases": [
 		{
-			"binding": "DB_USERS",
-			"database_name": "<YOUR-USERS-DATABASE-NAME>",
-			"database_id": "<YOUR-USERS-DATABASE-ID>"
+			"binding": "DIGITEXA_BLOG",
+			"database_name": "digitexa-blog-db",
+			"database_id": "64c6f50b-3d0c-44d9-835a-6f92c0835541"
 		},
 		{
-			"binding": "DB_ORDERS",
-			"database_name": "<YOUR-ORDERS-DATABASE-NAME>",
-			"database_id": "<YOUR-ORDERS-DATABASE-ID>"
-		},
-		{
-			"binding": "DB_PRODUCTS",
-			"database_name": "<YOUR-PRODUCTS-DATABASE-NAME>",
-			"database_id": "<YOUR-PRODUCTS-DATABASE-ID>"
+			"binding": "PROMPTIL",
+			"database_name": "promptil-db",
+			"database_id": "e652a7bf-492b-4905-90f4-1b29f483a608"
 		}
 	],
 	"secrets_store_secrets": [
