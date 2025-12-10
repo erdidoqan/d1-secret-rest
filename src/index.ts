@@ -3,7 +3,7 @@ import { cors } from "hono/cors";
 import { handleRest } from './rest';
 
 export interface Env {
-    SECRET: string;  // Normal secret olarak tanımlandı
+    API_TOKEN: string;  // Normal secret olarak tanımlandı
     // Dinamik D1 veritabanları - [key: string] formatında
     [key: string]: D1Database | string | unknown;
 }
@@ -63,7 +63,7 @@ export default {
         })
 
         // Secret değeri (normal secret olarak)
-        const secret = env.SECRET;
+        const secret = env.API_TOKEN;
 
         // Authentication middleware that verifies the Authorization header
         // is sent in on each request and matches the value of our Secret key.
