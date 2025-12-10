@@ -7,20 +7,32 @@
 	"name": "d1-rest",
 	"main": "src/index.ts",
 	"compatibility_date": "2025-03-03",
-    "d1_databases": [
-        {
-          "binding": "DB",
-          "database_name": "<YOUR-DATABASE-NAME>",
-          "database_id": "<YOUR-DATABASE-ID>"
-        }
-    ],
-    "secrets_store_secrets": [
-        {
-            "store_id": "<YOUR-STORE-ID>",
-            "binding": "SECRET",
-            "secret_name": "<YOUR-SECRET-NAME>"
-        }
-    ],
+	// Birden fazla D1 veritabanı tanımlayabilirsiniz
+	// URL'de binding adını kullanarak erişirsiniz: /db/{binding}/rest/{table}
+	"d1_databases": [
+		{
+			"binding": "DB_USERS",
+			"database_name": "<YOUR-USERS-DATABASE-NAME>",
+			"database_id": "<YOUR-USERS-DATABASE-ID>"
+		},
+		{
+			"binding": "DB_ORDERS",
+			"database_name": "<YOUR-ORDERS-DATABASE-NAME>",
+			"database_id": "<YOUR-ORDERS-DATABASE-ID>"
+		},
+		{
+			"binding": "DB_PRODUCTS",
+			"database_name": "<YOUR-PRODUCTS-DATABASE-NAME>",
+			"database_id": "<YOUR-PRODUCTS-DATABASE-ID>"
+		}
+	],
+	"secrets_store_secrets": [
+		{
+			"store_id": "<YOUR-STORE-ID>",
+			"binding": "SECRET",
+			"secret_name": "<YOUR-SECRET-NAME>"
+		}
+	],
 	"observability": {
 		"enabled": true
 	}

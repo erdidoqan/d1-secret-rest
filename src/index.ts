@@ -3,29 +3,55 @@ import { cors } from "hono/cors";
 import { handleRest } from './rest';
 
 export interface Env {
-    DB: D1Database;
     SECRET: SecretsStoreSecret;
+    // Dinamik D1 veritabanları - [key: string] formatında
+    [key: string]: D1Database | SecretsStoreSecret | unknown;
 }
 
-// # List all users
-// GET /rest/users
+// # List all users from specific database
+// GET /db/mydb/rest/users
 
 // # Get filtered and sorted users
-// GET /rest/users?age=25&sort_by=name&order=desc
+// GET /db/mydb/rest/users?age=25&sort_by=name&order=desc
 
 // # Get paginated results
-// GET /rest/users?limit=10&offset=20
+// GET /db/mydb/rest/users?limit=10&offset=20
 
 // # Create a new user
-// POST /rest/users
+// POST /db/mydb/rest/users
 // { "name": "John", "age": 30 }
 
 // # Update a user
-// PATCH /rest/users/123
+// PATCH /db/mydb/rest/users/123
 // { "age": 31 }
 
 // # Delete a user
-// DELETE /rest/users/123
+// DELETE /db/mydb/rest/users/123
+
+// # Execute raw SQL query
+// POST /db/mydb/query
+// { "query": "SELECT * FROM users", "params": [] }
+
+/**
+ * Verilen binding adına göre D1 veritabanını döndürür
+ */
+function getDatabase(env: Env, dbName: string): D1Database | null {
+    const db = env[dbName];
+    if (db && typeof db === 'object' && 'prepare' in db) {
+        return db as D1Database;
+    }
+    return null;
+}
+
+/**
+ * Env'deki tüm D1 veritabanı binding isimlerini döndürür
+ */
+function getAvailableDatabases(env: Env): string[] {
+    return Object.keys(env).filter(key => {
+        const value = env[key];
+        return value && typeof value === 'object' && 'prepare' in value;
+    });
+}
 
 export default {
     async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
@@ -59,12 +85,47 @@ export default {
             return next();
         };
 
-        // CRUD REST endpoints made available to all of our tables
-        app.all('/rest/*', authMiddleware, handleRest);
+        // Database middleware - veritabanını context'e ekler
+        const dbMiddleware = async (c: Context, next: Next) => {
+            const dbName = c.req.param('dbName');
+            
+            if (!dbName) {
+                return c.json({ error: 'Database name is required' }, 400);
+            }
 
-        // Execute a raw SQL statement with parameters with this route
-        app.post('/query', authMiddleware, async (c) => {
+            const db = getDatabase(c.env, dbName);
+            
+            if (!db) {
+                const available = getAvailableDatabases(c.env);
+                return c.json({ 
+                    error: `Database '${dbName}' not found`,
+                    available_databases: available
+                }, 404);
+            }
+
+            // Veritabanını context'e kaydet
+            c.set('db', db);
+            c.set('dbName', dbName);
+            
+            return next();
+        };
+
+        // Mevcut veritabanlarını listele
+        app.get('/databases', authMiddleware, async (c) => {
+            const databases = getAvailableDatabases(c.env);
+            return c.json({ 
+                success: true,
+                databases 
+            });
+        });
+
+        // CRUD REST endpoints - veritabanı adı ile
+        app.all('/db/:dbName/rest/*', authMiddleware, dbMiddleware, handleRest);
+
+        // Execute a raw SQL statement with parameters - veritabanı adı ile
+        app.post('/db/:dbName/query', authMiddleware, dbMiddleware, async (c) => {
             try {
+                const db = c.get('db') as D1Database;
                 const body = await c.req.json();
                 const { query, params } = body;
 
@@ -73,7 +134,7 @@ export default {
                 }
 
                 // Execute the query against D1 database
-                const results = await env.DB.prepare(query)
+                const results = await db.prepare(query)
                     .bind(...(params || []))
                     .all();
 
@@ -81,6 +142,19 @@ export default {
             } catch (error: any) {
                 return c.json({ error: error.message }, 500);
             }
+        });
+
+        // Root endpoint - API bilgisi
+        app.get('/', async (c) => {
+            return c.json({
+                name: 'd1-secret-rest',
+                version: '2.0.0',
+                endpoints: {
+                    list_databases: 'GET /databases',
+                    rest_api: '/db/{dbName}/rest/{table}',
+                    raw_query: 'POST /db/{dbName}/query'
+                }
+            });
         });
 
         return app.fetch(request, env, ctx);

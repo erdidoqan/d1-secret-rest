@@ -16,9 +16,17 @@ function sanitizeKeyword(identifier: string): string {
 }
 
 /**
+ * Context'ten D1 veritabanını alır
+ */
+function getDbFromContext(c: Context<{ Bindings: Env }>): D1Database {
+    return c.get('db') as D1Database;
+}
+
+/**
  * Handles GET requests to fetch records from a table
  */
 async function handleGet(c: Context<{ Bindings: Env }>, tableName: string, id?: string): Promise<Response> {
+    const db = getDbFromContext(c);
     const table = sanitizeKeyword(tableName);
     const searchParams = new URL(c.req.url).searchParams;
     
@@ -67,7 +75,7 @@ async function handleGet(c: Context<{ Bindings: Env }>, tableName: string, id?: 
             }
         }
 
-        const results = await c.env.DB.prepare(query)
+        const results = await db.prepare(query)
             .bind(...params)
             .all();
 
@@ -81,6 +89,7 @@ async function handleGet(c: Context<{ Bindings: Env }>, tableName: string, id?: 
  * Handles POST requests to create new records
  */
 async function handlePost(c: Context<{ Bindings: Env }>, tableName: string): Promise<Response> {
+    const db = getDbFromContext(c);
     const table = sanitizeKeyword(tableName);
     const data = await c.req.json();
 
@@ -94,7 +103,7 @@ async function handlePost(c: Context<{ Bindings: Env }>, tableName: string): Pro
         const query = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
         const params = columns.map(col => data[col]);
 
-        const result = await c.env.DB.prepare(query)
+        const result = await db.prepare(query)
             .bind(...params)
             .run();
 
@@ -108,6 +117,7 @@ async function handlePost(c: Context<{ Bindings: Env }>, tableName: string): Pro
  * Handles PUT/PATCH requests to update records
  */
 async function handleUpdate(c: Context<{ Bindings: Env }>, tableName: string, id: string): Promise<Response> {
+    const db = getDbFromContext(c);
     const table = sanitizeKeyword(tableName);
     const data = await c.req.json();
 
@@ -124,7 +134,7 @@ async function handleUpdate(c: Context<{ Bindings: Env }>, tableName: string, id
         const query = `UPDATE ${table} SET ${setColumns} WHERE id = ?`;
         const params = [...Object.values(data), id];
 
-        const result = await c.env.DB.prepare(query)
+        const result = await db.prepare(query)
             .bind(...params)
             .run();
 
@@ -138,11 +148,12 @@ async function handleUpdate(c: Context<{ Bindings: Env }>, tableName: string, id
  * Handles DELETE requests to remove records
  */
 async function handleDelete(c: Context<{ Bindings: Env }>, tableName: string, id: string): Promise<Response> {
+    const db = getDbFromContext(c);
     const table = sanitizeKeyword(tableName);
 
     try {
         const query = `DELETE FROM ${table} WHERE id = ?`;
-        const result = await c.env.DB.prepare(query)
+        const result = await db.prepare(query)
             .bind(id)
             .run();
 
@@ -159,12 +170,14 @@ export async function handleRest(c: Context<{ Bindings: Env }>): Promise<Respons
     const url = new URL(c.req.url);
     const pathParts = url.pathname.split('/').filter(Boolean);
     
-    if (pathParts.length < 2) {
-        return c.json({ error: 'Invalid path. Expected format: /rest/{tableName}/{id?}' }, 400);
+    // URL yapısı: /db/{dbName}/rest/{tableName}/{id?}
+    // pathParts: ['db', dbName, 'rest', tableName, id?]
+    if (pathParts.length < 4) {
+        return c.json({ error: 'Invalid path. Expected format: /db/{dbName}/rest/{tableName}/{id?}' }, 400);
     }
 
-    const tableName = pathParts[1];
-    const id = pathParts[2];
+    const tableName = pathParts[3];
+    const id = pathParts[4];
     
     switch (c.req.method) {
         case 'GET':
@@ -181,4 +194,4 @@ export async function handleRest(c: Context<{ Bindings: Env }>): Promise<Respons
         default:
             return c.json({ error: 'Method not allowed' }, 405);
     }
-} 
+}
